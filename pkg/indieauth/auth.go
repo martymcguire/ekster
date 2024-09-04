@@ -113,6 +113,8 @@ func GetEndpoints(me *url.URL) (Endpoints, error) {
 }
 
 // Authorize allows you to get the token from Indieauth through the command line
+// NOTE: clientID is ignored. instead, use the auto-generated redirectURI, which
+// IndieAuth clients should not attempt to fetch or parse.
 func Authorize(me *url.URL, endpoints Endpoints, clientID, scope string) (TokenResponse, error) {
 	var tokenResponse TokenResponse
 
@@ -130,7 +132,7 @@ func Authorize(me *url.URL, endpoints Endpoints, clientID, scope string) (TokenR
 	redirectURI := fmt.Sprintf("http://%s/", local)
 	state := util.RandStringBytes(16)
 
-	authorizationURL := CreateAuthorizationURL(*authURL, me.String(), clientID, redirectURI, state, scope)
+	authorizationURL := CreateAuthorizationURL(*authURL, me.String(), redirectURI, redirectURI, state, scope)
 
 	log.Printf("Browse to %s\n", authorizationURL)
 
@@ -175,7 +177,7 @@ func Authorize(me *url.URL, endpoints Endpoints, clientID, scope string) (TokenR
 	reqValues.Add("grant_type", "authorization_code")
 	reqValues.Add("code", code)
 	reqValues.Add("redirect_uri", redirectURI)
-	reqValues.Add("client_id", clientID)
+	reqValues.Add("client_id", redirectURI)
 	reqValues.Add("me", me.String())
 
 	req, err := http.NewRequest(http.MethodPost, endpoints.TokenEndpoint, strings.NewReader(reqValues.Encode()))
